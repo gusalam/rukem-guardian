@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { Shield, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Login() {
@@ -47,21 +47,6 @@ export default function Login() {
           <p className="text-white/60 max-w-md mx-auto">
             Kelola data anggota, laporan kematian, dan santunan dengan mudah dan transparan
           </p>
-          
-          <div className="mt-12 grid grid-cols-3 gap-6 text-center">
-            <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-              <p className="text-2xl font-bold text-white">1,234</p>
-              <p className="text-sm text-white/70">Anggota</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-              <p className="text-2xl font-bold text-white">98%</p>
-              <p className="text-sm text-white/70">Aktif</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-              <p className="text-2xl font-bold text-white">50+</p>
-              <p className="text-sm text-white/70">Santunan</p>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -69,6 +54,15 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md animate-slide-up">
           <div className="bg-card rounded-2xl p-8 shadow-elevated">
+            {/* Back to Home */}
+            <Link 
+              to="/"
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm">Kembali ke Beranda</span>
+            </Link>
+
             {/* Mobile Logo */}
             <div className="lg:hidden text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-primary mb-4">
@@ -146,25 +140,11 @@ export default function Login() {
               </button>
             </form>
 
-            {/* Demo Accounts */}
-            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center mb-3 sm:mb-4">
-                Akun Demo untuk Testing:
+            {/* Help Text */}
+            <div className="mt-6 pt-6 border-t border-border">
+              <p className="text-xs text-muted-foreground text-center">
+                Hubungi administrator jika Anda lupa password atau belum memiliki akun.
               </p>
-              <div className="space-y-2 text-xs">
-                <div className="flex flex-col sm:flex-row sm:justify-between p-2 rounded bg-muted/50 gap-1">
-                  <span className="text-muted-foreground">Admin RW:</span>
-                  <span className="font-mono text-foreground text-xs">admin.rw@rukem.id / admin123</span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between p-2 rounded bg-muted/50 gap-1">
-                  <span className="text-muted-foreground">Admin RT:</span>
-                  <span className="font-mono text-foreground text-xs">admin.rt@rukem.id / admin123</span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between p-2 rounded bg-muted/50 gap-1">
-                  <span className="text-muted-foreground">Operator:</span>
-                  <span className="font-mono text-foreground text-xs">operator@rukem.id / operator123</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
