@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAnggota, AnggotaWithStatus } from '@/hooks/useAnggota';
+import { useAnggota, useDeleteAnggota, AnggotaWithStatus } from '@/hooks/useAnggota';
 import { AnggotaFormModal } from '@/components/anggota/AnggotaFormModal';
 import { AnggotaDetailModal } from '@/components/anggota/AnggotaDetailModal';
 import { ImportAnggotaModal } from '@/components/anggota/ImportAnggotaModal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { exportAnggotaToCSV } from '@/lib/exportUtils';
 import {
   Search,
   Plus,
   Eye,
   Edit2,
+  Trash2,
   ChevronLeft,
   ChevronRight,
   Users,
@@ -42,11 +44,15 @@ export default function Anggota() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedAnggota, setSelectedAnggota] = useState<AnggotaWithStatus | null>(null);
+  const [anggotaToDelete, setAnggotaToDelete] = useState<AnggotaWithStatus | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const deleteAnggota = useDeleteAnggota();
   const canEdit = hasPermission(['admin_rw', 'admin_rt', 'operator']);
+  const canDelete = hasPermission(['admin_rw', 'admin_rt']);
 
   const getStatus = (anggota: AnggotaWithStatus): StatusFilter => {
     if (anggota.is_meninggal) return 'meninggal';
@@ -105,6 +111,19 @@ export default function Anggota() {
   const handleViewAnggota = (anggota: AnggotaWithStatus) => {
     setSelectedAnggota(anggota);
     setIsDetailOpen(true);
+  };
+
+  const handleDeleteClick = (anggota: AnggotaWithStatus) => {
+    setAnggotaToDelete(anggota);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (anggotaToDelete) {
+      await deleteAnggota.mutateAsync(anggotaToDelete.id);
+      setIsDeleteDialogOpen(false);
+      setAnggotaToDelete(null);
+    }
   };
 
   const handleExport = () => {
@@ -280,6 +299,15 @@ export default function Anggota() {
                                   <Edit2 className="w-4 h-4 text-muted-foreground" />
                                 </button>
                               )}
+                              {canDelete && !anggota.is_meninggal && (
+                                <button
+                                  onClick={() => handleDeleteClick(anggota)}
+                                  className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                                  title="Hapus"
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -368,6 +396,14 @@ export default function Anggota() {
                             <Edit2 className="w-4 h-4 text-muted-foreground" />
                           </button>
                         )}
+                        {canDelete && !anggota.is_meninggal && (
+                          <button
+                            onClick={() => handleDeleteClick(anggota)}
+                            className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -420,6 +456,17 @@ export default function Anggota() {
       <ImportAnggotaModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
+      />
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Hapus Data Anggota"
+        description={`Apakah Anda yakin ingin menghapus data anggota "${anggotaToDelete?.nama_kepala_keluarga}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteAnggota.isPending}
+        variant="destructive"
       />
     </DashboardLayout>
   );

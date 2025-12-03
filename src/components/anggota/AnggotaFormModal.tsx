@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useCreateAnggota, useUpdateAnggota, AnggotaWithStatus } from '@/hooks/useAnggota';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 interface AnggotaFormModalProps {
@@ -15,6 +16,7 @@ export function AnggotaFormModal({ isOpen, onClose, anggota }: AnggotaFormModalP
   
   const isEditing = !!anggota;
   const isLoading = createAnggota.isPending || updateAnggota.isPending;
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const [formData, setFormData] = useState({
     nomor_data: '',
@@ -104,9 +106,15 @@ export function AnggotaFormModal({ isOpen, onClose, anggota }: AnggotaFormModalP
     }
   }, [anggota, isOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.nama_kepala_keluarga.trim()) {
+      return;
+    }
+    setShowConfirm(true);
+  };
 
+  const handleConfirmSubmit = async () => {
     const dataToSubmit = {
       ...formData,
       tanggal_lahir: formData.tanggal_lahir || null,
@@ -114,13 +122,17 @@ export function AnggotaFormModal({ isOpen, onClose, anggota }: AnggotaFormModalP
       tanggal_daftar: formData.tanggal_daftar || null,
     };
 
-    if (isEditing && anggota) {
-      await updateAnggota.mutateAsync({ id: anggota.id, data: dataToSubmit });
-    } else {
-      await createAnggota.mutateAsync(dataToSubmit);
+    try {
+      if (isEditing && anggota) {
+        await updateAnggota.mutateAsync({ id: anggota.id, data: dataToSubmit });
+      } else {
+        await createAnggota.mutateAsync(dataToSubmit);
+      }
+      setShowConfirm(false);
+      onClose();
+    } catch (error) {
+      setShowConfirm(false);
     }
-    
-    onClose();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -478,6 +490,19 @@ export function AnggotaFormModal({ isOpen, onClose, anggota }: AnggotaFormModalP
           </div>
         </form>
       </div>
+      <ConfirmDialog
+        open={showConfirm}
+        onOpenChange={setShowConfirm}
+        title={isEditing ? 'Konfirmasi Perubahan Data' : 'Konfirmasi Tambah Anggota'}
+        description={isEditing 
+          ? `Anda akan menyimpan perubahan data anggota "${formData.nama_kepala_keluarga}". Lanjutkan?`
+          : `Anda akan menambahkan anggota baru "${formData.nama_kepala_keluarga}". Lanjutkan?`
+        }
+        confirmText="Ya, Simpan"
+        cancelText="Batal"
+        onConfirm={handleConfirmSubmit}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

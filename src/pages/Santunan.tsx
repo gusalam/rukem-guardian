@@ -6,6 +6,8 @@ import { useKematian } from '@/hooks/useKematian';
 import { Search, Eye, CheckCircle, Clock, Wallet, DollarSign, Calendar, Loader2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from 'sonner';
 
 const statusConfig = { 
   pending: { label: 'Proses', color: 'badge-warning', icon: Clock }, 
@@ -23,7 +25,10 @@ export default function Santunan() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [showConfirmCreate, setShowConfirmCreate] = useState(false);
+  const [showConfirmApprove, setShowConfirmApprove] = useState(false);
   const [selectedSantunan, setSelectedSantunan] = useState<typeof santunanList[0] | null>(null);
+  const [santunanToApprove, setSantunanToApprove] = useState<typeof santunanList[0] | null>(null);
   const [formData, setFormData] = useState({ kematian_id: '', nominal: 5000000 });
 
   const isAdminRW = hasPermission(['admin_rw']);
@@ -45,25 +50,51 @@ export default function Santunan() {
   const totalDisbursed = santunanList.filter((s) => s.status_santunan === 'approved').reduce((acc, s) => acc + (s.nominal || 0), 0);
   const totalPending = santunanList.filter((s) => s.status_santunan === 'pending').length;
 
-  const handleApprove = async (id: string) => { 
-    if (!user?.id) return; 
-    await approveSantunan.mutateAsync({ id, approved_by: user.id }); 
+  const handleApproveClick = (santunan: typeof santunanList[0]) => {
+    setSantunanToApprove(santunan);
+    setShowConfirmApprove(true);
   };
 
-  const handleCreateSantunan = async (e: React.FormEvent) => {
+  const handleConfirmApprove = async () => { 
+    if (!user?.id || !santunanToApprove) return; 
+    try {
+      await approveSantunan.mutateAsync({ id: santunanToApprove.id, approved_by: user.id }); 
+      setShowConfirmApprove(false);
+      setSantunanToApprove(null);
+    } catch (error) {
+      // Error handled by hook
+    }
+  };
+
+  const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.kematian_id) {
+      toast.error('Pilih data kematian terlebih dahulu');
+      return;
+    }
+    setShowConfirmCreate(true);
+  };
+
+  const handleConfirmCreate = async () => {
     const selectedKematian = kematianList.find(k => k.id === formData.kematian_id);
     if (!selectedKematian) return;
     
-    await createSantunan.mutateAsync({
-      kematian_id: formData.kematian_id,
-      anggota_id: selectedKematian.anggota_id,
-      nominal: formData.nominal,
-      status_santunan: 'pending',
-    });
-    setShowFormModal(false);
-    setFormData({ kematian_id: '', nominal: 5000000 });
+    try {
+      await createSantunan.mutateAsync({
+        kematian_id: formData.kematian_id,
+        anggota_id: selectedKematian.anggota_id,
+        nominal: formData.nominal,
+        status_santunan: 'pending',
+      });
+      setShowFormModal(false);
+      setShowConfirmCreate(false);
+      setFormData({ kematian_id: '', nominal: 5000000 });
+    } catch (error) {
+      setShowConfirmCreate(false);
+    }
   };
+
+  const selectedKematianForForm = kematianList.find(k => k.id === formData.kematian_id);
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></DashboardLayout>;
 
@@ -171,7 +202,7 @@ export default function Santunan() {
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </button>
                           {canApprove && santunan.status_santunan === 'pending' && (
-                            <button onClick={() => handleApprove(santunan.id)} disabled={approveSantunan.isPending} className="btn-primary text-sm py-1.5 px-3">
+                            <button onClick={() => handleApproveClick(santunan)} disabled={approveSantunan.isPending} className="btn-primary text-sm py-1.5 px-3">
                               {approveSantunan.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ACC'}
                             </button>
                           )}
@@ -219,7 +250,7 @@ export default function Santunan() {
                     <Eye className="w-4 h-4 text-muted-foreground" />
                   </button>
                   {canApprove && santunan.status_santunan === 'pending' && (
-                    <button onClick={() => handleApprove(santunan.id)} disabled={approveSantunan.isPending} className="btn-primary text-sm py-1.5 px-4">
+                    <button onClick={() => handleApproveClick(santunan)} disabled={approveSantunan.isPending} className="btn-primary text-sm py-1.5 px-4">
                       {approveSantunan.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ACC'}
                     </button>
                   )}
@@ -239,7 +270,7 @@ export default function Santunan() {
       <Dialog open={showFormModal} onOpenChange={setShowFormModal}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Input Santunan Baru</DialogTitle></DialogHeader>
-          <form onSubmit={handleCreateSantunan} className="space-y-4">
+          <form onSubmit={handleSubmitForm} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Data Kematian <span className="text-rukem-danger">*</span></label>
               <select value={formData.kematian_id} onChange={(e) => setFormData({ ...formData, kematian_id: e.target.value })} className="input-modern" required>
@@ -302,6 +333,30 @@ export default function Santunan() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirm Create */}
+      <ConfirmDialog
+        open={showConfirmCreate}
+        onOpenChange={setShowConfirmCreate}
+        title="Konfirmasi Input Santunan"
+        description={`Anda akan membuat pengajuan santunan sebesar ${formatCurrency(formData.nominal)} untuk "${selectedKematianForForm?.anggota?.nama_kepala_keluarga || ''}". Lanjutkan?`}
+        confirmText="Ya, Ajukan"
+        cancelText="Batal"
+        onConfirm={handleConfirmCreate}
+        isLoading={createSantunan.isPending}
+      />
+
+      {/* Confirm Approve */}
+      <ConfirmDialog
+        open={showConfirmApprove}
+        onOpenChange={setShowConfirmApprove}
+        title="Konfirmasi Persetujuan Santunan"
+        description={`Anda akan menyetujui santunan sebesar ${santunanToApprove?.nominal ? formatCurrency(santunanToApprove.nominal) : '-'} untuk keluarga "${santunanToApprove?.anggota?.nama_kepala_keluarga || ''}". Tindakan ini akan mencairkan dana santunan.`}
+        confirmText="Ya, Setujui"
+        cancelText="Batal"
+        onConfirm={handleConfirmApprove}
+        isLoading={approveSantunan.isPending}
+      />
     </DashboardLayout>
   );
 }
