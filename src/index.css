@@ -1,0 +1,255 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 210 50% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 50% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 50% 15%;
+
+    --primary: 210 50% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 30% 95%;
+    --secondary-foreground: 210 50% 25%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 210 15% 50%;
+
+    --accent: 210 80% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 210 50% 25%;
+
+    --radius: 0.75rem;
+
+    /* Custom RUKEM colors */
+    --rukem-navy: 210 50% 25%;
+    --rukem-navy-light: 210 40% 35%;
+    --rukem-blue: 210 80% 55%;
+    --rukem-blue-light: 210 70% 95%;
+    --rukem-success: 142 76% 36%;
+    --rukem-success-light: 142 70% 95%;
+    --rukem-warning: 38 92% 50%;
+    --rukem-warning-light: 38 90% 95%;
+    --rukem-danger: 0 84% 60%;
+    --rukem-danger-light: 0 80% 95%;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(210 20% 20% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(210 20% 20% / 0.08), 0 2px 4px -2px hsl(210 20% 20% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(210 20% 20% / 0.1), 0 4px 6px -4px hsl(210 20% 20% / 0.05);
+    --shadow-card: 0 1px 3px 0 hsl(210 20% 20% / 0.06), 0 1px 2px -1px hsl(210 20% 20% / 0.06);
+
+    --sidebar-background: 210 50% 25%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 210 80% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 30%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 210 40% 30%;
+    --sidebar-ring: 210 80% 55%;
+  }
+
+  .dark {
+    --background: 210 50% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 210 45% 15%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 210 45% 15%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 210 80% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 20%;
+    --secondary-foreground: 210 20% 95%;
+
+    --muted: 210 40% 18%;
+    --muted-foreground: 210 15% 60%;
+
+    --accent: 210 80% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 40% 25%;
+    --input: 210 40% 25%;
+    --ring: 210 80% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .stat-card {
+    @apply bg-card rounded-xl p-6 border border-border transition-all duration-300;
+    box-shadow: var(--shadow-card);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground/80 transition-all duration-200;
+  }
+
+  .nav-item:hover {
+    @apply bg-sidebar-accent text-sidebar-foreground;
+  }
+
+  .nav-item.active {
+    @apply bg-sidebar-primary text-sidebar-primary-foreground;
+  }
+
+  .table-modern {
+    @apply w-full border-collapse;
+  }
+
+  .table-modern th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50;
+  }
+
+  .table-modern td {
+    @apply px-4 py-4 text-sm border-b border-border;
+  }
+
+  .table-modern tr:hover td {
+    @apply bg-muted/30;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-[hsl(var(--rukem-success-light))] text-[hsl(var(--rukem-success))];
+  }
+
+  .badge-warning {
+    @apply bg-[hsl(var(--rukem-warning-light))] text-[hsl(var(--rukem-warning))];
+  }
+
+  .badge-danger {
+    @apply bg-[hsl(var(--rukem-danger-light))] text-[hsl(var(--rukem-danger))];
+  }
+
+  .badge-info {
+    @apply bg-[hsl(var(--rukem-blue-light))] text-[hsl(var(--rukem-blue))];
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm rounded-xl border border-border;
+    box-shadow: var(--shadow-card);
+  }
+
+  .input-modern {
+    @apply w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium transition-all duration-200 hover:opacity-90 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium transition-all duration-200 hover:bg-secondary/80 active:scale-[0.98];
+  }
+
+  .btn-accent {
+    @apply px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium transition-all duration-200 hover:opacity-90 active:scale-[0.98];
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}
