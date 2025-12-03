@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from 'sonner';
 
 export default function Kas() {
   const { data: transactions, isLoading } = useKas();
@@ -17,7 +18,7 @@ export default function Kas() {
   const { data: chartData } = useKasChartData();
   const [filterType, setFilterType] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { toast } = useToast();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const addKasMasuk = useAddKasMasuk();
 
   // Form state
@@ -32,31 +33,40 @@ export default function Kas() {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   const formatCurrencyShort = (value: number) => value >= 1000000 ? `Rp ${(value / 1000000).toFixed(1)}Jt` : formatCurrency(value);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const validateForm = () => {
     if (!formData.tanggal || !formData.nominal || !formData.keterangan.trim()) {
-      toast({ title: 'Error', description: 'Semua field harus diisi', variant: 'destructive' });
-      return;
+      toast.error('Semua field harus diisi');
+      return false;
     }
 
     const nominal = parseFloat(formData.nominal);
     if (isNaN(nominal) || nominal <= 0) {
-      toast({ title: 'Error', description: 'Nominal harus berupa angka positif', variant: 'destructive' });
-      return;
+      toast.error('Nominal harus berupa angka positif');
+      return false;
     }
+    return true;
+  };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setIsConfirmOpen(true);
+    }
+  };
+
+  const handleConfirmSubmit = async () => {
     try {
       await addKasMasuk.mutateAsync({
         tanggal: formData.tanggal,
-        nominal,
+        nominal: parseFloat(formData.nominal),
         keterangan: formData.keterangan.trim(),
       });
-      toast({ title: 'Berhasil', description: 'Kas masuk berhasil ditambahkan' });
+      toast.success('Kas masuk berhasil ditambahkan');
       setIsModalOpen(false);
+      setIsConfirmOpen(false);
       setFormData({ tanggal: new Date().toISOString().split('T')[0], nominal: '', keterangan: '' });
     } catch (error: any) {
-      toast({ title: 'Gagal', description: error.message || 'Gagal menambahkan kas masuk', variant: 'destructive' });
+      toast.error(error.message || 'Gagal menambahkan kas masuk. Silakan coba lagi.');
     }
   };
 
@@ -125,6 +135,16 @@ export default function Kas() {
               </form>
             </DialogContent>
           </Dialog>
+          <ConfirmDialog
+            open={isConfirmOpen}
+            onOpenChange={setIsConfirmOpen}
+            title="Konfirmasi Kas Masuk"
+            description={`Anda akan menambahkan kas masuk sebesar Rp ${parseFloat(formData.nominal || '0').toLocaleString('id-ID')}. Lanjutkan?`}
+            confirmText="Ya, Simpan"
+            cancelText="Batal"
+            onConfirm={handleConfirmSubmit}
+            isLoading={addKasMasuk.isPending}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">

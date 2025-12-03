@@ -6,6 +6,23 @@ import { toast } from 'sonner';
 type Kematian = Tables<'kematian'>;
 type KematianInsert = TablesInsert<'kematian'>;
 
+// Helper function for readable error messages
+function getReadableErrorMessage(errorMessage: string): string {
+  if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
+    return 'Data kematian untuk anggota ini sudah ada.';
+  }
+  if (errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key')) {
+    return 'Anggota tidak ditemukan dalam database.';
+  }
+  if (errorMessage.includes('row-level security') || errorMessage.includes('RLS')) {
+    return 'Anda tidak memiliki izin untuk melakukan aksi ini.';
+  }
+  if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    return 'Koneksi terputus. Periksa koneksi internet Anda.';
+  }
+  return `Terjadi kesalahan: ${errorMessage}`;
+}
+
 export interface KematianWithAnggota extends Kematian {
   anggota?: Tables<'anggota'> | null;
 }
@@ -59,7 +76,8 @@ export function useCreateKematian() {
       toast.success('Laporan kematian berhasil dicatat');
     },
     onError: (error: Error) => {
-      toast.error(`Gagal mencatat kematian: ${error.message}`);
+      const message = getReadableErrorMessage(error.message);
+      toast.error(message);
     },
   });
 }
@@ -88,7 +106,8 @@ export function useVerifyKematian() {
       toast.success('Laporan kematian berhasil diverifikasi');
     },
     onError: (error: Error) => {
-      toast.error(`Gagal memverifikasi: ${error.message}`);
+      const message = getReadableErrorMessage(error.message);
+      toast.error(message);
     },
   });
 }

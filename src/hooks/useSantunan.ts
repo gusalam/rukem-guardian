@@ -6,6 +6,29 @@ import { toast } from 'sonner';
 type Santunan = Tables<'santunan'>;
 type SantunanInsert = TablesInsert<'santunan'>;
 
+// Helper function for readable error messages
+function getReadableErrorMessage(errorMessage: string): string {
+  if (errorMessage.includes('Santunan tidak dapat dibuat tanpa data kematian')) {
+    return 'Santunan tidak dapat dibuat karena belum ada data kematian untuk anggota ini.';
+  }
+  if (errorMessage.includes('Anggota tidak terdaftar di RUKEM')) {
+    return 'Anggota tidak terdaftar sebagai anggota RUKEM aktif.';
+  }
+  if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
+    return 'Santunan untuk anggota ini sudah pernah diajukan.';
+  }
+  if (errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key')) {
+    return 'Data anggota atau kematian tidak ditemukan.';
+  }
+  if (errorMessage.includes('row-level security') || errorMessage.includes('RLS')) {
+    return 'Anda tidak memiliki izin untuk melakukan aksi ini.';
+  }
+  if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    return 'Koneksi terputus. Periksa koneksi internet Anda.';
+  }
+  return `Terjadi kesalahan: ${errorMessage}`;
+}
+
 export interface SantunanWithDetails extends Santunan {
   anggota?: Tables<'anggota'> | null;
   kematian?: Tables<'kematian'> | null;
@@ -67,7 +90,8 @@ export function useCreateSantunan() {
       toast.success('Pengajuan santunan berhasil dibuat');
     },
     onError: (error: Error) => {
-      toast.error(`Gagal membuat pengajuan: ${error.message}`);
+      const message = getReadableErrorMessage(error.message);
+      toast.error(message);
     },
   });
 }
@@ -99,7 +123,8 @@ export function useApproveSantunan() {
       toast.success('Santunan berhasil disetujui');
     },
     onError: (error: Error) => {
-      toast.error(`Gagal menyetujui santunan: ${error.message}`);
+      const message = getReadableErrorMessage(error.message);
+      toast.error(message);
     },
   });
 }

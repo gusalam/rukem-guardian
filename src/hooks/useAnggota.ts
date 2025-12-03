@@ -81,10 +81,12 @@ export function useCreateAnggota() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['anggota'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Anggota berhasil ditambahkan');
     },
     onError: (error: Error) => {
-      toast.error(`Gagal menambahkan anggota: ${error.message}`);
+      const message = getReadableErrorMessage(error.message);
+      toast.error(message);
     },
   });
 }
@@ -106,10 +108,43 @@ export function useUpdateAnggota() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['anggota'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Data anggota berhasil diperbarui');
     },
     onError: (error: Error) => {
-      toast.error(`Gagal memperbarui anggota: ${error.message}`);
+      const message = getReadableErrorMessage(error.message);
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteAnggota() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // First delete related keanggotaan_rukem
+      await supabase
+        .from('keanggotaan_rukem')
+        .delete()
+        .eq('anggota_id', id);
+
+      // Then delete the anggota
+      const { error } = await supabase
+        .from('anggota')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['anggota'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      toast.success('Data anggota berhasil dihapus');
+    },
+    onError: (error: Error) => {
+      const message = getReadableErrorMessage(error.message);
+      toast.error(message);
     },
   });
 }
@@ -135,4 +170,24 @@ export function useActiveAnggota() {
       return (data || []).filter(a => !deceasedIds.has(a.id));
     },
   });
+}
+
+// Helper function to convert technical errors to user-friendly messages
+function getReadableErrorMessage(errorMessage: string): string {
+  if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
+    return 'Data sudah ada. Pastikan nomor anggota atau NIK tidak duplikat.';
+  }
+  if (errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key')) {
+    return 'Tidak dapat menghapus data karena masih terkait dengan data lain.';
+  }
+  if (errorMessage.includes('row-level security') || errorMessage.includes('RLS')) {
+    return 'Anda tidak memiliki izin untuk melakukan aksi ini.';
+  }
+  if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    return 'Koneksi terputus. Periksa koneksi internet Anda.';
+  }
+  if (errorMessage.includes('timeout')) {
+    return 'Waktu permintaan habis. Silakan coba lagi.';
+  }
+  return `Terjadi kesalahan: ${errorMessage}`;
 }

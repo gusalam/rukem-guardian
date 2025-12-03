@@ -4,6 +4,8 @@ import { useKematian, useCreateKematian } from '@/hooks/useKematian';
 import { useActiveAnggota } from '@/hooks/useAnggota';
 import { Search, Plus, Eye, Calendar, MapPin, User, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from 'sonner';
 
 export default function Kematian() {
   const { data: kematianList = [], isLoading } = useKematian();
@@ -13,24 +15,46 @@ export default function Kematian() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedKematian, setSelectedKematian] = useState<typeof kematianList[0] | null>(null);
   const [formData, setFormData] = useState({ anggota_id: '', tanggal_wafat: '', jam_wafat: '', tempat_wafat: '', pelapor: '', keterangan: '' });
 
   const filteredKematian = kematianList.filter((k) => k.anggota?.nama_kepala_keluarga?.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createKematian.mutateAsync({ 
-      anggota_id: formData.anggota_id, 
-      tanggal_wafat: formData.tanggal_wafat, 
-      jam_wafat: formData.jam_wafat || null, 
-      tempat_wafat: formData.tempat_wafat || null, 
-      pelapor: formData.pelapor || null, 
-      keterangan: formData.keterangan || null 
-    });
-    setShowFormModal(false);
-    setFormData({ anggota_id: '', tanggal_wafat: '', jam_wafat: '', tempat_wafat: '', pelapor: '', keterangan: '' });
+  const validateForm = () => {
+    if (!formData.anggota_id || !formData.tanggal_wafat) {
+      toast.error('Anggota dan tanggal wafat harus diisi');
+      return false;
+    }
+    return true;
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleConfirmSubmit = async () => {
+    try {
+      await createKematian.mutateAsync({ 
+        anggota_id: formData.anggota_id, 
+        tanggal_wafat: formData.tanggal_wafat, 
+        jam_wafat: formData.jam_wafat || null, 
+        tempat_wafat: formData.tempat_wafat || null, 
+        pelapor: formData.pelapor || null, 
+        keterangan: formData.keterangan || null 
+      });
+      setShowFormModal(false);
+      setShowConfirmDialog(false);
+      setFormData({ anggota_id: '', tanggal_wafat: '', jam_wafat: '', tempat_wafat: '', pelapor: '', keterangan: '' });
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal menyimpan laporan kematian');
+    }
+  };
+
+  const selectedAnggotaName = activeAnggota.find(a => a.id === formData.anggota_id)?.nama_kepala_keluarga || '';
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></DashboardLayout>;
 
@@ -190,6 +214,17 @@ export default function Kematian() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title="Konfirmasi Laporan Kematian"
+        description={`Anda akan melaporkan kematian "${selectedAnggotaName}" pada tanggal ${formData.tanggal_wafat}. Pastikan data sudah benar karena akan mempengaruhi hak santunan.`}
+        confirmText="Ya, Laporkan"
+        cancelText="Periksa Lagi"
+        onConfirm={handleConfirmSubmit}
+        isLoading={createKematian.isPending}
+      />
     </DashboardLayout>
   );
 }
