@@ -1,13 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 export function useDashboardStats() {
   const queryClient = useQueryClient();
 
   // Real-time subscription for kas_rukem
   useEffect(() => {
-    const channel = supabase
+    const kasChannel = supabase
       .channel('dashboard-kas-changes')
       .on(
         'postgres_changes',
@@ -16,18 +17,87 @@ export function useDashboardStats() {
           schema: 'public',
           table: 'kas_rukem'
         },
-        () => {
+        (payload) => {
+          // Show toast notification for new kas masuk
+          if (payload.eventType === 'INSERT') {
+            const newRecord = payload.new as { jenis_transaksi: string; nominal: number; keterangan: string };
+            if (newRecord.jenis_transaksi === 'masuk') {
+              toast({
+                title: '💰 Kas Masuk Baru!',
+                description: `${newRecord.keterangan || 'Pemasukan'}: Rp ${Number(newRecord.nominal).toLocaleString('id-ID')}`,
+              });
+            } else {
+              toast({
+                title: '📤 Kas Keluar',
+                description: `${newRecord.keterangan || 'Pengeluaran'}: Rp ${Number(newRecord.nominal).toLocaleString('id-ID')}`,
+              });
+            }
+          }
           // Invalidate all kas-related queries when kas changes
           queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
           queryClient.invalidateQueries({ queryKey: ['kas', 'chart'] });
           queryClient.invalidateQueries({ queryKey: ['kas', 'summary'] });
           queryClient.invalidateQueries({ queryKey: ['kas'] });
+          queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
+        }
+      )
+      .subscribe();
+
+    // Real-time subscription for kematian
+    const kematianChannel = supabase
+      .channel('dashboard-kematian-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'kematian'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: '🕯️ Laporan Kematian Baru',
+              description: 'Data kematian baru telah ditambahkan',
+            });
+          }
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['kematian'] });
+          queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
+        }
+      )
+      .subscribe();
+
+    // Real-time subscription for santunan
+    const santunanChannel = supabase
+      .channel('dashboard-santunan-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'santunan'
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as { status_santunan: string };
+            if (updated.status_santunan === 'approved') {
+              toast({
+                title: '✅ Santunan Disetujui',
+                description: 'Santunan telah disetujui dan siap dicairkan',
+              });
+            }
+          }
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['santunan'] });
+          queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(kasChannel);
+      supabase.removeChannel(kematianChannel);
+      supabase.removeChannel(santunanChannel);
     };
   }, [queryClient]);
 
