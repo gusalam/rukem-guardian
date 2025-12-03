@@ -17,8 +17,11 @@ export function useDashboardStats() {
           table: 'kas_rukem'
         },
         () => {
-          // Invalidate dashboard stats when kas changes
+          // Invalidate all kas-related queries when kas changes
           queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
+          queryClient.invalidateQueries({ queryKey: ['kas', 'chart'] });
+          queryClient.invalidateQueries({ queryKey: ['kas', 'summary'] });
+          queryClient.invalidateQueries({ queryKey: ['kas'] });
         }
       )
       .subscribe();
