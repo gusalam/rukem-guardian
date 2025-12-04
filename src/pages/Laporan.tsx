@@ -12,6 +12,12 @@ import {
   generateKasPDF,
 } from '@/lib/pdfUtils';
 import {
+  generateAnggotaExcel,
+  generateKematianExcel,
+  generateSantunanExcel,
+  generateKasExcel,
+} from '@/lib/excelUtils';
+import {
   FileText,
   Download,
   Calendar,
@@ -20,6 +26,7 @@ import {
   Wallet,
   BarChart3,
   Loader2,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -116,6 +123,7 @@ export default function Laporan() {
       const options = {
         title: reportTypes.find((r) => r.id === selectedReport)?.title || 'Laporan',
         dateRange: dateRange.start && dateRange.end ? dateRange : undefined,
+        saldoAkhir: kasSummary?.saldo || 0,
       };
 
       switch (selectedReport) {
@@ -184,6 +192,82 @@ export default function Laporan() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    
+    try {
+      const options = {
+        title: reportTypes.find((r) => r.id === selectedReport)?.title || 'Laporan',
+        dateRange: dateRange.start && dateRange.end ? dateRange : undefined,
+        saldoAkhir: kasSummary?.saldo || 0,
+      };
+
+      switch (selectedReport) {
+        case 'anggota':
+          if (!anggotaList || anggotaList.length === 0) {
+            toast.error('Tidak ada data anggota');
+            return;
+          }
+          generateAnggotaExcel(anggotaList, options);
+          toast.success('Laporan anggota berhasil diexport ke Excel');
+          break;
+          
+        case 'kematian':
+          const filteredKematian = filterByDateRange(kematianList, 'tanggal_wafat');
+          if (filteredKematian.length === 0) {
+            toast.error('Tidak ada data kematian');
+            return;
+          }
+          generateKematianExcel(
+            filteredKematian.map((k) => ({
+              ...k,
+              anggota: k.anggota ? {
+                nama_kepala_keluarga: k.anggota.nama_kepala_keluarga,
+                rt: k.anggota.rt ?? undefined,
+                rw: k.anggota.rw ?? undefined,
+              } : undefined,
+            })),
+            options
+          );
+          toast.success('Laporan kematian berhasil diexport ke Excel');
+          break;
+          
+        case 'santunan':
+          const filteredSantunan = filterByDateRange(santunanList, 'created_at');
+          if (filteredSantunan.length === 0) {
+            toast.error('Tidak ada data santunan');
+            return;
+          }
+          generateSantunanExcel(
+            filteredSantunan.map((s) => ({
+              ...s,
+              anggota: s.anggota ? {
+                nama_kepala_keluarga: s.anggota.nama_kepala_keluarga,
+              } : undefined,
+            })),
+            options
+          );
+          toast.success('Laporan santunan berhasil diexport ke Excel');
+          break;
+          
+        case 'kas':
+          const filteredKas = filterByDateRange(kasList, 'tanggal');
+          if (filteredKas.length === 0) {
+            toast.error('Tidak ada data kas');
+            return;
+          }
+          generateKasExcel(filteredKas, options);
+          toast.success('Laporan kas berhasil diexport ke Excel');
+          break;
+      }
+    } catch (error) {
+      toast.error('Gagal mengexport laporan ke Excel');
+      console.error(error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const getPreviewData = () => {
     switch (selectedReport) {
       case 'anggota':
@@ -208,7 +292,7 @@ export default function Laporan() {
         {/* Header */}
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Laporan</h1>
-          <p className="text-sm text-muted-foreground">Generate dan export laporan dalam format PDF</p>
+          <p className="text-sm text-muted-foreground">Generate dan export laporan dalam format PDF dan Excel</p>
         </div>
 
         {/* Report Type Selection */}
@@ -271,18 +355,30 @@ export default function Laporan() {
                 />
               </div>
             </div>
-            <div className="sm:col-span-2 lg:col-span-1 flex items-end">
+            <div className="sm:col-span-2 lg:col-span-1 flex items-end gap-2">
               <button 
                 onClick={handleExportPDF} 
                 disabled={isExporting}
-                className="btn-primary flex items-center justify-center gap-2 w-full"
+                className="btn-primary flex items-center justify-center gap-2 flex-1"
               >
                 {isExporting ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <Download className="w-5 h-5" />
                 )}
-                <span>Export PDF</span>
+                <span>PDF</span>
+              </button>
+              <button 
+                onClick={handleExportExcel} 
+                disabled={isExporting}
+                className="flex items-center justify-center gap-2 flex-1 px-4 py-3 bg-rukem-success text-white rounded-xl font-medium hover:bg-rukem-success/90 transition-colors disabled:opacity-50"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-5 h-5" />
+                )}
+                <span>Excel</span>
               </button>
             </div>
           </div>
