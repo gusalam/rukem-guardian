@@ -10,6 +10,7 @@ type KasRukem = Tables<'kas_rukem'>;
 interface ReportOptions {
   title: string;
   dateRange?: { start: string; end: string };
+  saldoAkhir?: number;
 }
 
 const formatDate = (date: string | null) => {
@@ -158,7 +159,6 @@ export function generateKasPDF(kasList: KasRukem[], options: ReportOptions) {
     k.kategori || '-',
     k.keterangan || '-',
     formatCurrency(Number(k.nominal) || 0),
-    formatCurrency(Number(k.saldo_akhir) || 0),
   ]);
 
   const totalMasuk = kasList
@@ -167,18 +167,21 @@ export function generateKasPDF(kasList: KasRukem[], options: ReportOptions) {
   const totalKeluar = kasList
     .filter((k) => k.jenis_transaksi === 'keluar')
     .reduce((acc, k) => acc + Number(k.nominal), 0);
+  
+  // Use real saldo from options if provided, otherwise calculate
+  const saldoAkhir = options.saldoAkhir ?? (totalMasuk - totalKeluar);
 
   autoTable(doc, {
     startY: options.dateRange?.start ? 48 : 42,
-    head: [['No', 'Tanggal', 'Jenis', 'Kategori', 'Keterangan', 'Nominal', 'Saldo']],
+    head: [['No', 'Tanggal', 'Jenis', 'Kategori', 'Keterangan', 'Nominal']],
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: [234, 179, 8], textColor: 0, fontStyle: 'bold' },
     styles: { fontSize: 9, cellPadding: 3 },
     foot: [
-      ['', '', 'Total Masuk:', '', '', formatCurrency(totalMasuk), ''],
-      ['', '', 'Total Keluar:', '', '', formatCurrency(totalKeluar), ''],
-      ['', '', 'Saldo Akhir:', '', '', formatCurrency(totalMasuk - totalKeluar), ''],
+      ['', '', 'Total Masuk:', '', '', formatCurrency(totalMasuk)],
+      ['', '', 'Total Keluar:', '', '', formatCurrency(totalKeluar)],
+      ['', '', 'Saldo Akhir:', '', '', formatCurrency(saldoAkhir)],
     ],
     footStyles: { fillColor: [240, 240, 240], fontStyle: 'bold' },
   });
