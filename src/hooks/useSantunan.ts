@@ -101,26 +101,59 @@ export function useApproveSantunan() {
 
   return useMutation({
     mutationFn: async ({ id, approved_by }: { id: string; approved_by: string }) => {
-      const { data: result, error } = await supabase
+      // First get the santunan with anggota details to get nominal and name
+      const { data: santunanData, error: fetchError } = await supabase
+        .from('santunan')
+        .select('*, anggota:anggota_id(nama_kepala_keluarga)')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!santunanData) throw new Error('Santunan tidak ditemukan');
+
+      const nominal = santunanData.nominal || 0;
+      const namaAnggota = (santunanData.anggota as { nama_kepala_keluarga: string } | null)?.nama_kepala_keluarga || 'Anggota';
+      const today = new Date().toISOString().split('T')[0];
+
+      // Update santunan status
+      const { data: result, error: updateError } = await supabase
         .from('santunan')
         .update({
           status_santunan: 'approved',
           approved_at: new Date().toISOString(),
           approved_by,
-          tanggal_pencairan: new Date().toISOString().split('T')[0],
+          tanggal_pencairan: today,
         })
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Create kas_keluar record for the santunan payment
+      if (nominal > 0) {
+        const { error: kasError } = await supabase
+          .from('kas_rukem')
+          .insert({
+            tanggal: today,
+            nominal: nominal,
+            jenis_transaksi: 'keluar',
+            kategori: 'santunan',
+            keterangan: `Pembayaran santunan - Alm. ${namaAnggota}`,
+            sumber: 'santunan_approval',
+          });
+
+        if (kasError) throw kasError;
+      }
+
       return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['santunan'] });
       queryClient.invalidateQueries({ queryKey: ['kas'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      toast.success('Santunan berhasil disetujui');
+      queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
+      toast.success('Santunan berhasil disetujui dan kas keluar tercatat');
     },
     onError: (error: Error) => {
       const message = getReadableErrorMessage(error.message);
