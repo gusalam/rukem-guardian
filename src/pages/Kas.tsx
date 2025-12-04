@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useKas, useKasSummary, useKasChartData, useAddKasMasuk } from '@/hooks/useKas';
-import { TrendingUp, TrendingDown, Wallet, Calendar, ArrowUpRight, ArrowDownRight, Loader2, Plus } from 'lucide-react';
+import { useKas, useKasSummary, useKasChartData, useAddKasMasuk, useAddKasKeluar } from '@/hooks/useKas';
+import { TrendingUp, TrendingDown, Wallet, Calendar, ArrowUpRight, ArrowDownRight, Loader2, Plus, Minus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
 
@@ -17,15 +18,18 @@ export default function Kas() {
   const { data: summary } = useKasSummary();
   const { data: chartData } = useKasChartData();
   const [filterType, setFilterType] = useState('all');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMasukModalOpen, setIsMasukModalOpen] = useState(false);
+  const [isKeluarModalOpen, setIsKeluarModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmType, setConfirmType] = useState<'masuk' | 'keluar'>('masuk');
   const addKasMasuk = useAddKasMasuk();
+  const addKasKeluar = useAddKasKeluar();
 
-  // Form state
   const [formData, setFormData] = useState({
     tanggal: new Date().toISOString().split('T')[0],
     nominal: '',
     keterangan: '',
+    kategori: '',
   });
 
   const filteredTransactions = (transactions || []).filter(t => filterType === 'all' || t.jenis_transaksi === filterType);
@@ -33,12 +37,15 @@ export default function Kas() {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   const formatCurrencyShort = (value: number) => value >= 1000000 ? `Rp ${(value / 1000000).toFixed(1)}Jt` : formatCurrency(value);
 
+  const resetForm = () => {
+    setFormData({ tanggal: new Date().toISOString().split('T')[0], nominal: '', keterangan: '', kategori: '' });
+  };
+
   const validateForm = () => {
     if (!formData.tanggal || !formData.nominal || !formData.keterangan.trim()) {
       toast.error('Semua field harus diisi');
       return false;
     }
-
     const nominal = parseFloat(formData.nominal);
     if (isNaN(nominal) || nominal <= 0) {
       toast.error('Nominal harus berupa angka positif');
@@ -47,28 +54,48 @@ export default function Kas() {
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmitMasuk = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
+      setConfirmType('masuk');
+      setIsConfirmOpen(true);
+    }
+  };
+
+  const handleSubmitKeluar = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setConfirmType('keluar');
       setIsConfirmOpen(true);
     }
   };
 
   const handleConfirmSubmit = async () => {
     try {
-      await addKasMasuk.mutateAsync({
+      const payload = {
         tanggal: formData.tanggal,
         nominal: parseFloat(formData.nominal),
         keterangan: formData.keterangan.trim(),
-      });
-      toast.success('Kas masuk berhasil ditambahkan');
-      setIsModalOpen(false);
+        kategori: formData.kategori || undefined,
+      };
+
+      if (confirmType === 'masuk') {
+        await addKasMasuk.mutateAsync(payload);
+        toast.success('Kas masuk berhasil ditambahkan');
+        setIsMasukModalOpen(false);
+      } else {
+        await addKasKeluar.mutateAsync(payload);
+        toast.success('Kas keluar berhasil ditambahkan');
+        setIsKeluarModalOpen(false);
+      }
       setIsConfirmOpen(false);
-      setFormData({ tanggal: new Date().toISOString().split('T')[0], nominal: '', keterangan: '' });
+      resetForm();
     } catch (error: any) {
-      toast.error(error.message || 'Gagal menambahkan kas masuk. Silakan coba lagi.');
+      toast.error(error.message || 'Gagal menyimpan data. Silakan coba lagi.');
     }
   };
+
+  const isPending = addKasMasuk.isPending || addKasKeluar.isPending;
 
   return (
     <DashboardLayout>
@@ -78,73 +105,104 @@ export default function Kas() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Kas RUKEM</h1>
             <p className="text-sm text-muted-foreground">Riwayat pemasukan dan pengeluaran kas</p>
           </div>
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <div className="flex gap-2">
+          <Dialog open={isMasukModalOpen} onOpenChange={setIsMasukModalOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" variant="default">
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Kas Masuk</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Tambah Kas Masuk / Iuran</DialogTitle>
+                <DialogTitle>Tambah Kas Masuk</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmitMasuk} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tanggal">Tanggal</Label>
-                  <Input
-                    id="tanggal"
-                    type="date"
-                    value={formData.tanggal}
-                    onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })}
-                    required
-                  />
+                  <Label htmlFor="tanggal-masuk">Tanggal</Label>
+                  <Input id="tanggal-masuk" type="date" value={formData.tanggal} onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nominal">Nominal (Rp)</Label>
-                  <Input
-                    id="nominal"
-                    type="number"
-                    placeholder="Contoh: 50000"
-                    value={formData.nominal}
-                    onChange={(e) => setFormData({ ...formData, nominal: e.target.value })}
-                    min="1"
-                    required
-                  />
+                  <Label htmlFor="nominal-masuk">Nominal (Rp)</Label>
+                  <Input id="nominal-masuk" type="number" placeholder="Contoh: 50000" value={formData.nominal} onChange={(e) => setFormData({ ...formData, nominal: e.target.value })} min="1" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="keterangan">Keterangan</Label>
-                  <Textarea
-                    id="keterangan"
-                    placeholder="Contoh: Iuran bulanan RT 01"
-                    value={formData.keterangan}
-                    onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })}
-                    rows={3}
-                    required
-                  />
+                  <Label htmlFor="kategori-masuk">Kategori</Label>
+                  <Select value={formData.kategori} onValueChange={(v) => setFormData({ ...formData, kategori: v })}>
+                    <SelectTrigger><SelectValue placeholder="Pilih kategori" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="iuran">Iuran Anggota</SelectItem>
+                      <SelectItem value="donasi">Donasi</SelectItem>
+                      <SelectItem value="lainnya">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="keterangan-masuk">Keterangan</Label>
+                  <Textarea id="keterangan-masuk" placeholder="Contoh: Iuran bulanan RT 01" value={formData.keterangan} onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })} rows={3} required />
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={addKasMasuk.isPending}>
-                    {addKasMasuk.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Simpan
-                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsMasukModalOpen(false)}>Batal</Button>
+                  <Button type="submit" disabled={isPending}>{isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Simpan</Button>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
-          <ConfirmDialog
-            open={isConfirmOpen}
-            onOpenChange={setIsConfirmOpen}
-            title="Konfirmasi Kas Masuk"
-            description={`Anda akan menambahkan kas masuk sebesar Rp ${parseFloat(formData.nominal || '0').toLocaleString('id-ID')}. Lanjutkan?`}
-            confirmText="Ya, Simpan"
-            cancelText="Batal"
-            onConfirm={handleConfirmSubmit}
-            isLoading={addKasMasuk.isPending}
-          />
+
+          <Dialog open={isKeluarModalOpen} onOpenChange={setIsKeluarModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" variant="destructive">
+                <Minus className="w-4 h-4" />
+                <span className="hidden sm:inline">Kas Keluar</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tambah Kas Keluar</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmitKeluar} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tanggal-keluar">Tanggal</Label>
+                  <Input id="tanggal-keluar" type="date" value={formData.tanggal} onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nominal-keluar">Nominal (Rp)</Label>
+                  <Input id="nominal-keluar" type="number" placeholder="Contoh: 500000" value={formData.nominal} onChange={(e) => setFormData({ ...formData, nominal: e.target.value })} min="1" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="kategori-keluar">Kategori</Label>
+                  <Select value={formData.kategori} onValueChange={(v) => setFormData({ ...formData, kategori: v })}>
+                    <SelectTrigger><SelectValue placeholder="Pilih kategori" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="santunan">Pembayaran Santunan</SelectItem>
+                      <SelectItem value="operasional">Operasional</SelectItem>
+                      <SelectItem value="lainnya">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="keterangan-keluar">Keterangan</Label>
+                  <Textarea id="keterangan-keluar" placeholder="Contoh: Santunan almarhum Bapak Ahmad" value={formData.keterangan} onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })} rows={3} required />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" onClick={() => setIsKeluarModalOpen(false)}>Batal</Button>
+                  <Button type="submit" variant="destructive" disabled={isPending}>{isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Simpan</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <ConfirmDialog
+          open={isConfirmOpen}
+          onOpenChange={setIsConfirmOpen}
+          title={confirmType === 'masuk' ? 'Konfirmasi Kas Masuk' : 'Konfirmasi Kas Keluar'}
+          description={`Anda akan menambahkan kas ${confirmType} sebesar Rp ${parseFloat(formData.nominal || '0').toLocaleString('id-ID')}. Lanjutkan?`}
+          confirmText="Ya, Simpan"
+          cancelText="Batal"
+          onConfirm={handleConfirmSubmit}
+          isLoading={isPending}
+          variant={confirmType === 'keluar' ? 'destructive' : 'default'}
+        />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">

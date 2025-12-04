@@ -103,17 +103,18 @@ export function useKasChartData() {
   });
 }
 
-interface AddKasMasukInput {
+interface KasInput {
   tanggal: string;
   nominal: number;
   keterangan: string;
+  kategori?: string;
 }
 
 export function useAddKasMasuk() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: AddKasMasukInput) => {
+    mutationFn: async (input: KasInput) => {
       const { data, error } = await supabase
         .from('kas_rukem')
         .insert({
@@ -121,7 +122,34 @@ export function useAddKasMasuk() {
           nominal: input.nominal,
           keterangan: input.keterangan,
           jenis_transaksi: 'masuk',
-          kategori: 'iuran',
+          kategori: input.kategori || 'iuran',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kas'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useAddKasKeluar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: KasInput) => {
+      const { data, error } = await supabase
+        .from('kas_rukem')
+        .insert({
+          tanggal: input.tanggal,
+          nominal: input.nominal,
+          keterangan: input.keterangan,
+          jenis_transaksi: 'keluar',
+          kategori: input.kategori || 'santunan',
         })
         .select()
         .single();
