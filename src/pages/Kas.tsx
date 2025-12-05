@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useKas, useKasSummary, useKasChartData, useAddKasMasuk, useAddKasKeluar, useUpdateKas, useDeleteKas } from '@/hooks/useKas';
+import { useAuth } from '@/contexts/AuthContext';
 import { TrendingUp, TrendingDown, Wallet, Calendar, ArrowUpRight, ArrowDownRight, Loader2, Plus, Minus, Pencil, Trash2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
@@ -20,7 +21,11 @@ export default function Kas() {
   const { data: transactions, isLoading } = useKas();
   const { data: summary } = useKasSummary();
   const { data: chartData } = useKasChartData();
+  const { hasPermission } = useAuth();
   const [filterType, setFilterType] = useState('all');
+  
+  // Check if user is admin (can manage kas)
+  const canManageKas = hasPermission(['admin_rw', 'admin_rt']);
   const [isMasukModalOpen, setIsMasukModalOpen] = useState(false);
   const [isKeluarModalOpen, setIsKeluarModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -161,14 +166,15 @@ export default function Kas() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Kas RUKEM</h1>
             <p className="text-sm text-muted-foreground">Riwayat pemasukan dan pengeluaran kas</p>
           </div>
-          <div className="flex gap-2">
-            <Dialog open={isMasukModalOpen} onOpenChange={setIsMasukModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2" variant="default" onClick={resetForm}>
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Kas Masuk</span>
-                </Button>
-              </DialogTrigger>
+          {canManageKas && (
+            <div className="flex gap-2">
+              <Dialog open={isMasukModalOpen} onOpenChange={setIsMasukModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2" variant="default" onClick={resetForm}>
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Kas Masuk</span>
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Tambah Kas Masuk</DialogTitle>
@@ -245,9 +251,10 @@ export default function Kas() {
                     <Button type="submit" variant="destructive" disabled={isPending}>{isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Simpan</Button>
                   </div>
                 </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </div>
 
         {/* Edit Modal */}
@@ -407,14 +414,16 @@ export default function Kas() {
                   <p className={cn('text-sm font-semibold font-mono', t.jenis_transaksi === 'masuk' ? 'text-rukem-success' : 'text-rukem-danger')}>
                     {t.jenis_transaksi === 'masuk' ? '+' : '-'}{formatCurrencyShort(Number(t.nominal))}
                   </p>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(t)}>
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(t)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {canManageKas && (
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(t)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(t)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

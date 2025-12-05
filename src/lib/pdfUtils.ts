@@ -64,24 +64,32 @@ export function generateAnggotaPDF(anggotaList: AnggotaWithStatus[], options: Re
   const tableData = anggotaList.map((a, index) => [
     index + 1,
     a.nomor_anggota || '-',
+    a.no_kk || '-',
+    a.no_ktp || '-',
     a.nama_kepala_keluarga,
+    a.jenis_kelamin || '-',
     `RT ${a.rt || '-'}/RW ${a.rw || '-'}`,
-    a.alamat || '-',
     a.no_hp || '-',
     a.is_meninggal ? 'Meninggal' : a.status_keluar ? 'Keluar' : 'Aktif',
   ]);
 
   autoTable(doc, {
     startY: options.dateRange?.start ? 48 : 42,
-    head: [['No', 'No. Anggota', 'Nama Kepala Keluarga', 'RT/RW', 'Alamat', 'No. HP', 'Status']],
+    head: [['No', 'No. Anggota', 'No. KK', 'NIK', 'Nama KK', 'JK', 'RT/RW', 'No. HP', 'Status']],
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
-    styles: { fontSize: 9, cellPadding: 3 },
+    styles: { fontSize: 8, cellPadding: 2 },
     columnStyles: {
-      0: { cellWidth: 15 },
-      1: { cellWidth: 30 },
-      4: { cellWidth: 60 },
+      0: { cellWidth: 10 },
+      1: { cellWidth: 25 },
+      2: { cellWidth: 35 },
+      3: { cellWidth: 35 },
+      4: { cellWidth: 45 },
+      5: { cellWidth: 12 },
+      6: { cellWidth: 25 },
+      7: { cellWidth: 30 },
+      8: { cellWidth: 20 },
     },
   });
 
