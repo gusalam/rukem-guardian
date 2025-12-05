@@ -33,11 +33,25 @@ export function generateAnggotaExcel(anggotaList: AnggotaWithStatus[], options: 
   const data = anggotaList.map((a, index) => ({
     'No': index + 1,
     'No. Anggota': a.nomor_anggota || '-',
+    'No. KK': a.no_kk || '-',
+    'No. KTP/NIK': a.no_ktp || '-',
     'Nama Kepala Keluarga': a.nama_kepala_keluarga,
+    'Jenis Kelamin': a.jenis_kelamin || '-',
+    'Tempat Lahir': a.tempat_lahir || '-',
+    'Tanggal Lahir': formatDate(a.tanggal_lahir),
+    'Agama': a.agama || '-',
+    'Pendidikan': a.pendidikan || '-',
+    'Pekerjaan': a.pekerjaan || '-',
+    'Status Perkawinan': a.status_perkawinan || '-',
     'RT': a.rt || '-',
     'RW': a.rw || '-',
+    'Kelurahan': a.kelurahan || '-',
+    'Kecamatan': a.kecamatan || '-',
+    'Kota': a.kota || '-',
     'Alamat': a.alamat || '-',
     'No. HP': a.no_hp || '-',
+    'Email': a.email || '-',
+    'Tanggal Daftar': formatDate(a.tanggal_daftar),
     'Status': a.is_meninggal ? 'Meninggal' : a.status_keluar ? 'Keluar' : 'Aktif',
   }));
 
@@ -49,11 +63,25 @@ export function generateAnggotaExcel(anggotaList: AnggotaWithStatus[], options: 
   const colWidths = [
     { wch: 5 },  // No
     { wch: 15 }, // No. Anggota
+    { wch: 20 }, // No. KK
+    { wch: 20 }, // No. KTP/NIK
     { wch: 30 }, // Nama
+    { wch: 12 }, // Jenis Kelamin
+    { wch: 15 }, // Tempat Lahir
+    { wch: 15 }, // Tanggal Lahir
+    { wch: 12 }, // Agama
+    { wch: 15 }, // Pendidikan
+    { wch: 15 }, // Pekerjaan
+    { wch: 15 }, // Status Perkawinan
     { wch: 5 },  // RT
     { wch: 5 },  // RW
+    { wch: 15 }, // Kelurahan
+    { wch: 15 }, // Kecamatan
+    { wch: 15 }, // Kota
     { wch: 40 }, // Alamat
     { wch: 15 }, // No. HP
+    { wch: 25 }, // Email
+    { wch: 15 }, // Tanggal Daftar
     { wch: 12 }, // Status
   ];
   ws['!cols'] = colWidths;
