@@ -133,6 +133,7 @@ export function useAddKasMasuk() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kas'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
     },
   });
 }
@@ -160,6 +161,61 @@ export function useAddKasKeluar() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kas'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
+    },
+  });
+}
+
+interface KasUpdateInput extends KasInput {
+  id: string;
+  jenis_transaksi: 'masuk' | 'keluar';
+}
+
+export function useUpdateKas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: KasUpdateInput) => {
+      const { data, error } = await supabase
+        .from('kas_rukem')
+        .update({
+          tanggal: input.tanggal,
+          nominal: input.nominal,
+          keterangan: input.keterangan,
+          kategori: input.kategori,
+          jenis_transaksi: input.jenis_transaksi,
+        })
+        .eq('id', input.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kas'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
+    },
+  });
+}
+
+export function useDeleteKas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('kas_rukem')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kas'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['public', 'stats'] });
     },
   });
 }
