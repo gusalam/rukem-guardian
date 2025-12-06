@@ -29,12 +29,35 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+// Force NIK/KK as text to prevent scientific notation in Excel
+const forceTextFormat = (value: string | null): string => {
+  if (!value) return '-';
+  // Return as-is - the cell will be formatted as text
+  return value;
+};
+
+// Helper to set cell as text format
+const setCellsAsText = (ws: XLSX.WorkSheet, columns: number[], rowCount: number) => {
+  for (const col of columns) {
+    for (let row = 2; row <= rowCount + 1; row++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row - 1, c: col });
+      if (ws[cellRef]) {
+        // Force cell type to text (string)
+        ws[cellRef].t = 's';
+        // Add text format
+        ws[cellRef].z = '@';
+      }
+    }
+  }
+};
+
 export function generateAnggotaExcel(anggotaList: AnggotaWithStatus[], options: ExportOptions) {
+  // Prepare data with NIK/KK as text strings (prefixed with apostrophe to force text)
   const data = anggotaList.map((a, index) => ({
     'No': index + 1,
     'No. Anggota': a.nomor_anggota || '-',
-    'No. KK': a.no_kk || '-',
-    'No. KTP/NIK': a.no_ktp || '-',
+    'No. KK': forceTextFormat(a.no_kk),
+    'No. KTP/NIK': forceTextFormat(a.no_ktp),
     'Nama Kepala Keluarga': a.nama_kepala_keluarga,
     'Jenis Kelamin': a.jenis_kelamin || '-',
     'Tempat Lahir': a.tempat_lahir || '-',
@@ -55,7 +78,11 @@ export function generateAnggotaExcel(anggotaList: AnggotaWithStatus[], options: 
     'Status': a.is_meninggal ? 'Meninggal' : a.status_keluar ? 'Keluar' : 'Aktif',
   }));
 
-  const ws = XLSX.utils.json_to_sheet(data);
+  const ws = XLSX.utils.json_to_sheet(data, { cellStyles: true });
+  
+  // Force No. KK (column 2) and No. KTP/NIK (column 3) as text
+  setCellsAsText(ws, [2, 3, 18], data.length); // columns: No. KK, No. KTP/NIK, No. HP
+  
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Anggota');
   
@@ -135,15 +162,17 @@ export function generateSantunanExcel(
     'Nominal': formatCurrency(Number(s.nominal) || 0),
     'Tanggal Pencairan': formatDate(s.tanggal_pencairan),
     'Metode Pencairan': s.metode_pencairan || '-',
-    'Status': s.status_santunan === 'approved' ? 'Selesai' : s.status_santunan === 'pending' ? 'Pending' : 'Ditolak',
+    'Status': s.status_santunan === 'approved' ? 'Disetujui' : s.status_santunan === 'pending' ? 'Pending' : s.status_santunan === 'rejected' ? 'Ditolak' : s.status_santunan || '-',
   }));
 
-  const totalNominal = santunanList.reduce((acc, s) => acc + Number(s.nominal || 0), 0);
+  const totalNominal = santunanList
+    .filter(s => s.status_santunan === 'approved')
+    .reduce((acc, s) => acc + Number(s.nominal || 0), 0);
   
   // Add total row
   data.push({
     'No': '' as unknown as number,
-    'Nama Penerima': 'TOTAL',
+    'Nama Penerima': 'TOTAL (Disetujui)',
     'Nominal': formatCurrency(totalNominal),
     'Tanggal Pencairan': '',
     'Metode Pencairan': '',
