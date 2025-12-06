@@ -12,6 +12,7 @@ import Kematian from "./pages/Kematian";
 import Santunan from "./pages/Santunan";
 import Kas from "./pages/Kas";
 import Laporan from "./pages/Laporan";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/santunan" element={<Santunan />} />
             <Route path="/kas" element={<Kas />} />
             <Route path="/laporan" element={<Laporan />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
