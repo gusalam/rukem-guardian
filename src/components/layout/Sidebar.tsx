@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { UserRole } from '@/types/rukem';
 
 interface NavItem {
@@ -42,13 +42,17 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const { user, logout, hasPermission } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const prevPathRef = useRef(location.pathname);
 
-  // Close mobile sidebar on route change
+  // Close mobile sidebar on route change (only when route actually changes, not on mount)
   useEffect(() => {
-    if (window.innerWidth < 1024) {
-      onToggle();
+    if (prevPathRef.current !== location.pathname) {
+      prevPathRef.current = location.pathname;
+      if (isOpen && window.innerWidth < 1024) {
+        onToggle();
+      }
     }
-  }, [location.pathname]);
+  }, [location.pathname, isOpen, onToggle]);
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
@@ -63,13 +67,23 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
   const visibleNavItems = navItems.filter(item => hasPermission(item.roles));
 
+  const handleOverlayClick = () => {
+    if (isOpen) {
+      onToggle();
+    }
+  };
+
+  const handleCloseClick = () => {
+    onToggle();
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onToggle}
+          onClick={handleOverlayClick}
         />
       )}
 
@@ -104,7 +118,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           )}
           {/* Mobile Close Button */}
           <button
-            onClick={onToggle}
+            onClick={handleCloseClick}
             className="lg:hidden p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
           >
             <X className="w-5 h-5" />
