@@ -5,7 +5,8 @@ import {
   Users, 
   Wallet, 
   Heart, 
-  FileText, 
+  UserCheck,
+  UserX,
   ArrowRight, 
   Radio,
   Loader2 
@@ -40,31 +41,40 @@ export default function HomePage() {
       delay: '0ms',
     },
     {
+      label: 'Anggota Aktif',
+      value: stats?.totalAnggotaAktif || 0,
+      displayValue: (stats?.totalAnggotaAktif || 0).toLocaleString('id-ID'),
+      icon: UserCheck,
+      color: 'from-emerald-500 to-emerald-600',
+      bgColor: 'bg-emerald-500/10',
+      delay: '100ms',
+    },
+    {
+      label: 'Anggota Meninggal',
+      value: stats?.totalAnggotaMeninggal || 0,
+      displayValue: (stats?.totalAnggotaMeninggal || 0).toLocaleString('id-ID'),
+      icon: UserX,
+      color: 'from-rose-500 to-rose-600',
+      bgColor: 'bg-rose-500/10',
+      delay: '200ms',
+    },
+    {
       label: 'Saldo Kas RUKEM',
       value: stats?.saldoKas || 0,
       displayValue: formatCurrency(stats?.saldoKas || 0),
       icon: Wallet,
-      color: 'from-emerald-500 to-emerald-600',
-      bgColor: 'bg-emerald-500/10',
-      delay: '100ms',
+      color: 'from-amber-500 to-amber-600',
+      bgColor: 'bg-amber-500/10',
+      delay: '300ms',
     },
     {
       label: 'Total Santunan Tersalurkan',
       value: stats?.totalSantunan || 0,
       displayValue: formatCurrency(stats?.totalSantunan || 0),
       icon: Heart,
-      color: 'from-rose-500 to-rose-600',
-      bgColor: 'bg-rose-500/10',
-      delay: '200ms',
-    },
-    {
-      label: 'Santunan Disalurkan',
-      value: stats?.santunanCount || 0,
-      displayValue: `${(stats?.santunanCount || 0).toLocaleString('id-ID')} Keluarga`,
-      icon: FileText,
-      color: 'from-amber-500 to-amber-600',
-      bgColor: 'bg-amber-500/10',
-      delay: '300ms',
+      color: 'from-purple-500 to-purple-600',
+      bgColor: 'bg-purple-500/10',
+      delay: '400ms',
     },
   ];
 
@@ -123,9 +133,9 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            {statsData.map((stat, index) => (
+          {/* Stats Grid - 5 items */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-5">
+            {statsData.map((stat) => (
               <div
                 key={stat.label}
                 className="relative group animate-slide-up"
@@ -133,22 +143,22 @@ export default function HomePage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl blur-xl -z-10"
                   style={{ background: `linear-gradient(to right, var(--tw-gradient-stops))` }} />
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:transform hover:-translate-y-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
-                      <stat.icon className="w-6 h-6 text-white" />
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:transform hover:-translate-y-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
+                      <stat.icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Radio className="w-2.5 h-2.5 text-green-400 animate-pulse" />
-                      <span className="text-[10px] text-green-400 font-medium">LIVE</span>
+                      <Radio className="w-2 h-2 text-green-400 animate-pulse" />
+                      <span className="text-[9px] text-green-400 font-medium">LIVE</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-white/60 text-sm mb-1">{stat.label}</p>
+                    <p className="text-white/60 text-xs mb-1">{stat.label}</p>
                     {isLoading ? (
-                      <Loader2 className="w-6 h-6 animate-spin text-white/50 mt-2" />
+                      <Loader2 className="w-5 h-5 animate-spin text-white/50 mt-2" />
                     ) : (
-                      <p className="text-2xl lg:text-3xl font-bold text-white truncate">
+                      <p className="text-xl lg:text-2xl font-bold text-white truncate">
                         {stat.displayValue}
                       </p>
                     )}

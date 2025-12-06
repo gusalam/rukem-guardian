@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 
 interface PublicStats {
   totalAnggota: number;
+  totalAnggotaAktif: number;
+  totalAnggotaMeninggal: number;
   saldoKas: number;
   totalSantunan: number;
   santunanCount: number;
@@ -57,6 +59,8 @@ export function usePublicStats() {
         console.error('Error fetching public stats:', error);
         return {
           totalAnggota: 0,
+          totalAnggotaAktif: 0,
+          totalAnggotaMeninggal: 0,
           saldoKas: 0,
           totalSantunan: 0,
           santunanCount: 0,
@@ -69,6 +73,8 @@ export function usePublicStats() {
       
       return {
         totalAnggota: stats?.totalAnggota || 0,
+        totalAnggotaAktif: stats?.totalAnggotaAktif || 0,
+        totalAnggotaMeninggal: stats?.totalAnggotaMeninggal || 0,
         saldoKas: stats?.saldoKas || 0,
         totalSantunan: stats?.totalSantunan || 0,
         santunanCount: stats?.santunanCount || 0,
