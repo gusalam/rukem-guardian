@@ -165,8 +165,11 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         <div className="p-4 border-t border-sidebar-border">
           {(!collapsed || window.innerWidth < 1024) ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center text-sidebar-foreground font-semibold">
+              <NavLink
+                to="/profile"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center text-sidebar-foreground font-semibold overflow-hidden">
                   {user?.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -182,7 +185,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     {user && getRoleBadge(user.role).label}
                   </span>
                 </div>
-              </div>
+              </NavLink>
               <button
                 onClick={logout}
                 className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
@@ -192,13 +195,24 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               </button>
             </div>
           ) : (
-            <button
-              onClick={logout}
-              className="w-full flex items-center justify-center p-3 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
-              title="Keluar"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+            <div className="space-y-2">
+              <NavLink
+                to="/profile"
+                className="w-full flex items-center justify-center p-3 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                title="Profil"
+              >
+                <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sidebar-foreground font-semibold text-sm">
+                  {user?.name.charAt(0)}
+                </div>
+              </NavLink>
+              <button
+                onClick={logout}
+                className="w-full flex items-center justify-center p-3 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                title="Keluar"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           )}
         </div>
       </aside>
