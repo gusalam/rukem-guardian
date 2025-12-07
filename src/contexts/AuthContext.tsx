@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
+    let initialized = false;
 
     // Check for existing session FIRST
     const initializeAuth = async () => {
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isMounted) {
           setIsLoading(false);
           setIsInitialized(true);
+          initialized = true;
         }
       }
     };
@@ -100,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return;
         
         // Only process after initialization to prevent race conditions
-        if (!isInitialized && event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') {
+        if (!initialized && event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') {
           return;
         }
         
@@ -131,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [isInitialized]);
+  }, []);
 
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({
