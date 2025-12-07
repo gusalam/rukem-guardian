@@ -2,16 +2,29 @@ import { ReactNode, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sidebar } from './Sidebar';
-import { Menu } from 'lucide-react';
+import { Menu, Loader2 } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Show loading state while auth is initializing
+  if (!isInitialized || isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+          <p className="text-muted-foreground mt-4">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only redirect to login AFTER auth has fully initialized
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

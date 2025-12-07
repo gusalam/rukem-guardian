@@ -11,8 +11,20 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading, isInitialized } = useAuth();
   const navigate = useNavigate();
+
+  // Wait for auth to initialize before making redirect decisions
+  if (!isInitialized || authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary via-rukem-navy-light to-rukem-blue flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-white animate-spin mx-auto" />
+          <p className="text-white/80 mt-4">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
