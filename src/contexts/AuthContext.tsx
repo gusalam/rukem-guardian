@@ -19,6 +19,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   hasPermission: (allowedRoles: AppRole[]) => boolean;
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserWithRole | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchUserRole = async (userId: string, userEmail: string, fullName?: string) => {
     const { data: roleData } = await supabase
@@ -55,21 +57,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let isMounted = true;
+
+    // Check for existing session FIRST
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
+        if (!isMounted) return;
+        
+        setSession(existingSession);
+        
+        if (existingSession?.user) {
+          const userData = await fetchUserRole(
+            existingSession.user.id,
+            existingSession.user.email || '',
+            existingSession.user.user_metadata?.full_name
+          );
+          if (isMounted) {
+            setUser(userData);
+          }
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsInitialized(true);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    // Set up auth state listener AFTER initial check
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        if (!isMounted) return;
+        
+        // Only process after initialization to prevent race conditions
+        if (!isInitialized && event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') {
+          return;
+        }
+        
         setSession(newSession);
         
         if (newSession?.user) {
           // Defer Supabase calls with setTimeout to prevent deadlocks
           setTimeout(async () => {
+            if (!isMounted) return;
             const userData = await fetchUserRole(
               newSession.user.id,
               newSession.user.email || '',
               newSession.user.user_metadata?.full_name
             );
-            setUser(userData);
-            setIsLoading(false);
+            if (isMounted) {
+              setUser(userData);
+              setIsLoading(false);
+            }
           }, 0);
         } else {
           setUser(null);
@@ -78,22 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      if (existingSession?.user) {
-        fetchUserRole(
-          existingSession.user.id,
-          existingSession.user.email || '',
-          existingSession.user.user_metadata?.full_name
-        ).then(setUser).finally(() => setIsLoading(false));
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [isInitialized]);
 
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -129,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         isAuthenticated: !!session && !!user,
         isLoading,
+        isInitialized,
         login,
         logout,
         hasPermission,
