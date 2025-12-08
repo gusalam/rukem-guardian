@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           agama: string | null
           alamat: string | null
+          approved_at: string | null
+          approved_by: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -38,6 +40,7 @@ export type Database = {
           provinsi: string | null
           rt: string | null
           rw: string | null
+          status_anggota: string | null
           status_keluar: boolean | null
           status_perkawinan: string | null
           tanggal_daftar: string | null
@@ -45,10 +48,13 @@ export type Database = {
           tanggal_pembukuan: string | null
           tempat_lahir: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           agama?: string | null
           alamat?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -69,6 +75,7 @@ export type Database = {
           provinsi?: string | null
           rt?: string | null
           rw?: string | null
+          status_anggota?: string | null
           status_keluar?: boolean | null
           status_perkawinan?: string | null
           tanggal_daftar?: string | null
@@ -76,10 +83,13 @@ export type Database = {
           tanggal_pembukuan?: string | null
           tempat_lahir?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           agama?: string | null
           alamat?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -100,6 +110,7 @@ export type Database = {
           provinsi?: string | null
           rt?: string | null
           rw?: string | null
+          status_anggota?: string | null
           status_keluar?: boolean | null
           status_perkawinan?: string | null
           tanggal_daftar?: string | null
@@ -107,6 +118,7 @@ export type Database = {
           tanggal_pembukuan?: string | null
           tempat_lahir?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -374,6 +386,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_anggota_status: { Args: { _user_id: string }; Returns: string }
       get_public_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
@@ -382,10 +395,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_anggota: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin_rw" | "admin_rt" | "operator"
+      app_role: "admin_rw" | "admin_rt" | "operator" | "anggota"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -513,7 +527,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin_rw", "admin_rt", "operator"],
+      app_role: ["admin_rw", "admin_rt", "operator", "anggota"],
     },
   },
 } as const
