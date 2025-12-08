@@ -1,4 +1,5 @@
-export type UserRole = 'admin_rw' | 'admin_rt' | 'operator';
+export type UserRole = 'admin_rw' | 'admin_rt' | 'operator' | 'anggota';
+export type AnggotaStatus = 'pending' | 'active' | 'rejected';
 
 export type MemberStatus = 'aktif' | 'keluar' | 'meninggal';
 export type IuranType = 'bulanan' | 'per_kejadian';
